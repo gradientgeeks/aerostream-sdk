@@ -8,12 +8,23 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>GradientGeeks.AeroStream.Client</PackageId>
     <Version>0.1.0-preview</Version>
-    <Authors>Gradient Geeks / AeroMQ Authors</Authors>
-    <Description>Official high-performance .NET C# Client SDK for AeroStream native binary protocol (0xAE 0x01).</Description>
+    <Authors>Uttam Mahata / GradientGeeks</Authors>
+    <Company>GradientGeeks</Company>
+    <Copyright>Copyright © 2026 Uttam Mahata / GradientGeeks</Copyright>
+    <Description>Official high-performance .NET C# Client SDK for AeroStream native binary protocol (0xAE 0x01). Sub-millisecond tail latency, IAsyncEnumerable streaming, zero-copy framing.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/gradientgeeks/aerostream-sdk</RepositoryUrl>
-    <PackageTags>aeromq;aerostream;messaging;streaming;kafka;realtime;tcp</PackageTags>
+    <RepositoryType>git</RepositoryType>
+    <ProjectUrl>https://aerostream.gradientgeeks.com</ProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>aerostream;aeromq;messaging;streaming;kafka;realtime;tcp;event-streaming</PackageTags>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>

@@ -1,0 +1,60 @@
+name: Publish .NET SDK to NuGet
+
+on:
+  push:
+    tags:
+      - 'dotnet/v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.1.0-preview)'
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        working-directory: dotnet
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/dotnet/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore /p:Version=${{ steps.ver.outputs.version }}
+
+      - name: Test
+        run: dotnet test -c Release --no-build --verbosity minimal
+
+      - name: Pack
+        run: |
+          dotnet pack src/GradientGeeks.AeroStream.Client/GradientGeeks.AeroStream.Client.csproj \
+            -c Release --no-build \
+            /p:Version=${{ steps.ver.outputs.version }} \
+            -o ./nupkg
+
+      - name: Push to NuGet
+        run: |
+          dotnet nuget push ./nupkg/*.nupkg \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
