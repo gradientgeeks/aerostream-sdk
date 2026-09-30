@@ -7,16 +7,15 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g. 0.1.1-preview) — must already be in package.json'
+        description: 'Version already in package.json to publish'
         required: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # Required for npm Trusted Publishers (OIDC) — no NPM_TOKEN needed
     permissions:
       contents: read
-      id-token: write
+      id-token: write   # needed for provenance attestation
 
     defaults:
       run:
@@ -37,25 +36,13 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Version in package.json is the source of truth — no override needed.
-      # Use version-bump.yml to bump + tag, which commits package.json first.
-      - name: Verify version matches tag
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          TAG="${GITHUB_REF#refs/tags/nodejs/v}"
-          PKG=$(node -p "require('./package.json').version")
-          echo "Tag version: $TAG  |  package.json: $PKG"
-          if [[ "$TAG" != "$PKG" ]]; then
-            echo "::warning::Tag $TAG != package.json $PKG — publishing package.json version $PKG"
-          fi
-
-      # Trusted Publisher: OIDC — no NPM_TOKEN required.
-      # Configured at npmjs.com → @gradientgeeks/aerostream-client → Publishing
-      - name: Publish to npm (Trusted Publisher / OIDC)
+      - name: Publish to npm
         run: |
           VERSION=$(node -p "require('./package.json').version")
           if [[ "$VERSION" == *"-"* ]]; then
-            npm publish --provenance --access public --tag next
+            npm publish --access public --tag next
           else
-            npm publish --provenance --access public
+            npm publish --access public
           fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

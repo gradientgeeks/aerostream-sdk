@@ -63,7 +63,7 @@ jobs:
         uses: NuGet/login@v1
         id: nugetlogin
         with:
-          user: gradientgeeks
+          user: uttammahata  # policy creator username (not org owner)
 
       - name: Push to NuGet.org
         run: |
