@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write   # needed for provenance attestation
+      id-token: write   # required for OIDC Trusted Publisher
 
     defaults:
       run:
@@ -36,13 +36,14 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Publish to npm
+      # Trusted Publisher OIDC — no NPM_TOKEN needed.
+      # Prerelease versions must use --tag to avoid defaulting to latest.
+      - name: Publish to npm (Trusted Publisher / OIDC)
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          echo "Publishing version: $VERSION"
           if [[ "$VERSION" == *"-"* ]]; then
-            npm publish --access public --tag next
+            npm publish --provenance --access public --tag next
           else
-            npm publish --access public
+            npm publish --provenance --access public --tag latest
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
