@@ -1,0 +1,29 @@
+# General
+.DS_Store
+*.log
+
+# Go
+bin/
+*.exe
+
+# Rust
+target/
+
+# Java
+target/
+*.class
+*.jar
+.idea/
+*.iml
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Node.js
+node_modules/
+dist/
+npm-debug.log*
