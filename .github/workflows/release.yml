@@ -1,0 +1,39 @@
+name: GitHub Release
+
+on:
+  push:
+    tags:
+      - 'nodejs/v*'
+      - 'dotnet/v*'
+      - 'rust/v*'
+      - 'go/v*'
+      - 'java/v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Parse tag details
+        id: meta
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          SDK=$(echo "$TAG" | cut -d/ -f1)
+          VER=$(echo "$TAG" | cut -d/ -f2)
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "sdk=$SDK" >> "$GITHUB_OUTPUT"
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: "${{ steps.meta.outputs.sdk }} SDK ${{ steps.meta.outputs.ver }}"
+          generate_release_notes: true
+          prerelease: ${{ contains(steps.meta.outputs.ver, 'preview') || contains(steps.meta.outputs.ver, 'alpha') || contains(steps.meta.outputs.ver, 'beta') || contains(steps.meta.outputs.ver, 'rc') }}

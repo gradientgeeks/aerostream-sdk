@@ -1,0 +1,33 @@
+name: Publish — Go Module Indexing
+
+on:
+  push:
+    tags:
+      - 'go/v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Go module version (e.g. v0.1.0)'
+        required: true
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Warm Go Proxy and Index on pkg.go.dev
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            VER="${GITHUB_REF#refs/tags/go/}"
+          else
+            VER="${{ github.event.inputs.version }}"
+          fi
+          echo "Warming Go proxy for github.com/gradientgeeks/aerostream-sdk/go at version $VER..."
+          GOPROXY=https://proxy.golang.org go list -m "github.com/gradientgeeks/aerostream-sdk/go@${VER}"
+          echo "Successfully indexed on proxy.golang.org and pkg.go.dev!"
