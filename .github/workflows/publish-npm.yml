@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g. 0.1.0-preview)'
-        required: true
+        description: 'Version to publish (e.g. 0.1.1-preview) — must already be in package.json'
+        required: false
 
 jobs:
   publish:
@@ -37,22 +37,20 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Set version from tag
+      # Version in package.json is the source of truth — no override needed.
+      # Use version-bump.yml to bump + tag, which commits package.json first.
+      - name: Verify version matches tag
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           TAG="${GITHUB_REF#refs/tags/nodejs/v}"
-          npm version "$TAG" --no-git-tag-version --allow-same-version
+          PKG=$(node -p "require('./package.json').version")
+          echo "Tag version: $TAG  |  package.json: $PKG"
+          if [[ "$TAG" != "$PKG" ]]; then
+            echo "::warning::Tag $TAG != package.json $PKG — publishing package.json version $PKG"
+          fi
 
-      - name: Set version from input
-        if: github.event_name == 'workflow_dispatch'
-        run: npm version "${{ github.event.inputs.version }}" --no-git-tag-version
-
-      # Trusted Publisher: uses OIDC — no NPM_TOKEN required.
-      # Configure on npmjs.com: package settings → Publishing → Trusted Publisher
-      #   Repository owner: gradientgeeks
-      #   Repository name:  aerostream-sdk
-      #   Workflow file:    publish-npm.yml
-      #   Environment:      (leave blank or set to 'npm-publish')
+      # Trusted Publisher: OIDC — no NPM_TOKEN required.
+      # Configured at npmjs.com → @gradientgeeks/aerostream-client → Publishing
       - name: Publish to npm (Trusted Publisher / OIDC)
         run: |
           VERSION=$(node -p "require('./package.json').version")
