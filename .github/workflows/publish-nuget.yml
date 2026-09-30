@@ -54,24 +54,14 @@ jobs:
             /p:Version=${{ steps.ver.outputs.version }} \
             -o ./nupkg
 
-      # NuGet Trusted Publisher: exchanges OIDC token for short-lived API key.
-      # Configure on nuget.org: Account → Trusted publishing → Create
-      #   Repository owner: gradientgeeks
-      #   Repository:       aerostream-sdk
-      #   Workflow file:    publish-nuget.yml
-      - name: NuGet login (OIDC Trusted Publisher)
-        uses: NuGet/login@v1
-        id: nugetlogin
-        with:
-          user: uttammahata  # policy creator username (not org owner)
-
       - name: Push to NuGet.org
         run: |
           dotnet nuget push ./nupkg/*.nupkg \
-            --api-key "${{ steps.nugetlogin.outputs.NUGET_API_KEY }}" \
+            --api-key "${{ secrets.NUGET_API_KEY }}" \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
           dotnet nuget push ./nupkg/*.snupkg \
-            --api-key "${{ steps.nugetlogin.outputs.NUGET_API_KEY }}" \
+            --api-key "${{ secrets.NUGET_API_KEY }}" \
             --source https://api.nuget.org/v3/index.json \
-            --skip-duplicate
+            --skip-duplicate || true
+

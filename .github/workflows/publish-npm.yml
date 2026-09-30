@@ -5,10 +5,6 @@ on:
     tags:
       - 'nodejs/v*'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version already in package.json to publish'
-        required: false
 
 jobs:
   publish:
@@ -30,20 +26,17 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           scope: '@gradientgeeks'
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
+      - run: npm run build
 
-      - name: Build
-        run: npm run build
+      - name: Debug — confirm OIDC token available
+        run: |
+          echo "ACTIONS_ID_TOKEN_REQUEST_URL=$ACTIONS_ID_TOKEN_REQUEST_URL"
+          echo "version=$(node -p \"require('./package.json').version\")"
 
-      # Trusted Publisher OIDC — no NPM_TOKEN needed.
-      # Prerelease versions must use --tag to avoid defaulting to latest.
-      - name: Publish to npm (Trusted Publisher / OIDC)
+      - name: Publish to npm (OIDC Trusted Publisher)
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "Publishing version: $VERSION"
-          if [[ "$VERSION" == *"-"* ]]; then
-            npm publish --provenance --access public --tag next
-          else
-            npm publish --provenance --access public --tag latest
-          fi
+          TAG=$([[ "$VERSION" == *"-"* ]] && echo "next" || echo "latest")
+          echo "Publishing $VERSION with tag=$TAG"
+          npm publish --provenance --access public --tag "$TAG"
