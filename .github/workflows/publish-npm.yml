@@ -20,12 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Do NOT set NODE_AUTH_TOKEN here — let OIDC handle auth
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
-          scope: '@gradientgeeks'
+
+      # npm Trusted Publishing requires npm >= 11.5.1
+      - name: Upgrade npm to latest for OIDC Trusted Publishing
+        run: sudo npm install -g npm@latest
 
       - run: npm ci
       - run: npm run build
@@ -40,5 +41,3 @@ jobs:
           fi
           echo "Publishing $VERSION with tag=$TAG"
           npm publish --provenance --access public --tag "$TAG"
-        env:
-          NODE_AUTH_TOKEN: ''   # clear token set by setup-node so OIDC is used
