@@ -23,7 +23,7 @@ If you discover a vulnerability in any AeroStream SDK (such as authentication to
    - Go to the **Security** tab of `gradientgeeks/aerostream-sdk`.
    - Click **Report a vulnerability** under *Advisories*.
 2. **Direct Security Email**:
-   - Email: **`security@gradientgeeks.com`**
+   - Email: **`contact@gradientgeeks.com`**
    - CC: **`uttam-mahata-cs@outlook.com`**
 
 ### Response SLA
