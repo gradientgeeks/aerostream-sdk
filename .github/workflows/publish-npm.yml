@@ -54,4 +54,10 @@ jobs:
       #   Workflow file:    publish-npm.yml
       #   Environment:      (leave blank or set to 'npm-publish')
       - name: Publish to npm (Trusted Publisher / OIDC)
-        run: npm publish --provenance --access public
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *"-"* ]]; then
+            npm publish --provenance --access public --tag next
+          else
+            npm publish --provenance --access public
+          fi
