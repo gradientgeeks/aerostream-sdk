@@ -63,7 +63,7 @@ jobs:
         uses: NuGet/login@v1
         id: nugetlogin
         with:
-          user: uttammahata
+          user: gradientgeeks
 
       - name: Push to NuGet.org
         run: |
