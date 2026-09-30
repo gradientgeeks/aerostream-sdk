@@ -1,9 +1,11 @@
-name: Publish .NET SDK to NuGet
+name: Publish — NuGet (GradientGeeks.AeroStream.Client)
 
 on:
   push:
     tags:
       - 'dotnet/v*'
+    paths:
+      - 'dotnet/**'
   workflow_dispatch:
     inputs:
       version:
@@ -45,16 +47,20 @@ jobs:
       - name: Test
         run: dotnet test -c Release --no-build --verbosity minimal
 
-      - name: Pack
+      - name: Pack (with symbols .snupkg)
         run: |
           dotnet pack src/GradientGeeks.AeroStream.Client/GradientGeeks.AeroStream.Client.csproj \
             -c Release --no-build \
             /p:Version=${{ steps.ver.outputs.version }} \
             -o ./nupkg
 
-      - name: Push to NuGet
+      - name: Push to NuGet.org
         run: |
           dotnet nuget push ./nupkg/*.nupkg \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+          dotnet nuget push ./nupkg/*.snupkg \
             --api-key ${{ secrets.NUGET_API_KEY }} \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate

@@ -1,4 +1,4 @@
-name: Publish Node.js SDK to npm
+name: Publish — npm (@gradientgeeks/aerostream-client)
 
 on:
   push:
@@ -13,6 +13,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Required for npm Trusted Publishers (OIDC) — no NPM_TOKEN needed
     permissions:
       contents: read
       id-token: write
@@ -46,7 +47,11 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: npm version "${{ github.event.inputs.version }}" --no-git-tag-version
 
-      - name: Publish to npm
-        run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Trusted Publisher: uses OIDC — no NPM_TOKEN required.
+      # Configure on npmjs.com: package settings → Publishing → Trusted Publisher
+      #   Repository owner: gradientgeeks
+      #   Repository name:  aerostream-sdk
+      #   Workflow file:    publish-npm.yml
+      #   Environment:      (leave blank or set to 'npm-publish')
+      - name: Publish to npm (Trusted Publisher / OIDC)
+        run: npm publish --provenance --access public
