@@ -62,6 +62,8 @@ jobs:
       - name: NuGet login (OIDC Trusted Publisher)
         uses: NuGet/login@v1
         id: nugetlogin
+        with:
+          user: uttammahata
 
       - name: Push to NuGet.org
         run: |
