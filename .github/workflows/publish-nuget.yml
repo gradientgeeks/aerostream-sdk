@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - 'dotnet/v*'
-    paths:
-      - 'dotnet/**'
   workflow_dispatch:
     inputs:
       version:
@@ -15,8 +13,10 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Required for NuGet Trusted Publishers (OIDC) — no NUGET_API_KEY needed
     permissions:
       contents: read
+      id-token: write
 
     defaults:
       run:
@@ -54,13 +54,22 @@ jobs:
             /p:Version=${{ steps.ver.outputs.version }} \
             -o ./nupkg
 
+      # NuGet Trusted Publisher: exchanges OIDC token for short-lived API key.
+      # Configure on nuget.org: Account → Trusted publishing → Create
+      #   Repository owner: gradientgeeks
+      #   Repository:       aerostream-sdk
+      #   Workflow file:    publish-nuget.yml
+      - name: NuGet login (OIDC Trusted Publisher)
+        uses: NuGet/login@v1
+        id: nugetlogin
+
       - name: Push to NuGet.org
         run: |
           dotnet nuget push ./nupkg/*.nupkg \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --api-key "${{ steps.nugetlogin.outputs.NUGET_API_KEY }}" \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
           dotnet nuget push ./nupkg/*.snupkg \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --api-key "${{ steps.nugetlogin.outputs.NUGET_API_KEY }}" \
             --source https://api.nuget.org/v3/index.json \
             --skip-duplicate
