@@ -1,0 +1,133 @@
+name: Version Bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch          # 0.1.0 → 0.1.1
+          - minor          # 0.1.0 → 0.2.0
+          - major          # 0.1.0 → 1.0.0
+          - preview        # 0.1.0 → 0.1.0-preview
+          - stable         # 0.1.0-preview → 0.1.0 (drops prerelease)
+      sdk:
+        description: 'Which SDK(s) to bump'
+        required: true
+        type: choice
+        options:
+          - all
+          - nodejs
+          - dotnet
+          - go
+          - rust
+          - java
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Configure git
+        run: |
+          git config user.name  "Uttam-Mahata"
+          git config user.email "uttam-mahata-cs@outlook.com"
+
+      - name: Compute next version
+        id: version
+        run: |
+          # Read current version from nodejs/package.json as source of truth
+          CURRENT=$(node -p "require('./nodejs/package.json').version")
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+
+          # Strip any prerelease suffix for base
+          BASE=$(echo "$CURRENT" | sed 's/-.*$//')
+          MAJOR=$(echo "$BASE" | cut -d. -f1)
+          MINOR=$(echo "$BASE" | cut -d. -f2)
+          PATCH=$(echo "$BASE" | cut -d. -f3)
+
+          BUMP="${{ github.event.inputs.bump }}"
+          case "$BUMP" in
+            major)   NEXT="$((MAJOR+1)).0.0" ;;
+            minor)   NEXT="${MAJOR}.$((MINOR+1)).0" ;;
+            patch)   NEXT="${MAJOR}.${MINOR}.$((PATCH+1))" ;;
+            preview) NEXT="${BASE}-preview" ;;
+            stable)  NEXT="${BASE}" ;;
+          esac
+
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "Bumping $CURRENT → $NEXT"
+
+      - name: Bump Node.js version
+        if: inputs.sdk == 'all' || inputs.sdk == 'nodejs'
+        working-directory: nodejs
+        run: |
+          npm version ${{ steps.version.outputs.next }} --no-git-tag-version
+
+      - name: Bump .NET version
+        if: inputs.sdk == 'all' || inputs.sdk == 'dotnet'
+        run: |
+          V="${{ steps.version.outputs.next }}"
+          sed -i "s|<Version>.*</Version>|<Version>${V}</Version>|g" \
+            dotnet/src/GradientGeeks.AeroStream.Client/GradientGeeks.AeroStream.Client.csproj
+
+      - name: Bump Go version
+        if: inputs.sdk == 'all' || inputs.sdk == 'go'
+        run: |
+          V="${{ steps.version.outputs.next }}"
+          sed -i "s|^// Version:.*|// Version: v${V}|g" go/client/client.go || true
+          # Update any version constant in go files
+          find go/ -name "*.go" -exec sed -i "s|Version = \".*\"|Version = \"${V}\"|g" {} \; || true
+
+      - name: Bump Rust version
+        if: inputs.sdk == 'all' || inputs.sdk == 'rust'
+        run: |
+          V="${{ steps.version.outputs.next }}"
+          sed -i "s|^version = \".*\"|version = \"${V}\"|" rust/Cargo.toml
+
+      - name: Bump Java version
+        if: inputs.sdk == 'all' || inputs.sdk == 'java'
+        run: |
+          V="${{ steps.version.outputs.next }}"
+          sed -i "s|<version>.*</version>|<version>${V}</version>|" java/pom.xml
+
+      - name: Commit and push version bump
+        run: |
+          V="${{ steps.version.outputs.next }}"
+          SDK="${{ github.event.inputs.sdk }}"
+          git add -A
+          git diff --staged --quiet || git commit -m "chore(release): bump ${SDK} SDK to v${V}"
+          git push origin main
+
+      - name: Create and push tags
+        run: |
+          V="${{ steps.version.outputs.next }}"
+          SDK="${{ github.event.inputs.sdk }}"
+
+          tag_and_push() {
+            local prefix="$1"
+            git tag "${prefix}/v${V}" -m "Release ${prefix} SDK v${V}"
+            git push origin "${prefix}/v${V}"
+            echo "✅ Tagged ${prefix}/v${V}"
+          }
+
+          case "$SDK" in
+            all)    tag_and_push nodejs; tag_and_push dotnet; tag_and_push go; tag_and_push rust; tag_and_push java ;;
+            nodejs) tag_and_push nodejs ;;
+            dotnet) tag_and_push dotnet ;;
+            go)     tag_and_push go ;;
+            rust)   tag_and_push rust ;;
+            java)   tag_and_push java ;;
+          esac
