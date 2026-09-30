@@ -20,6 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Do NOT set NODE_AUTH_TOKEN here — let OIDC handle auth
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -29,14 +30,15 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-      - name: Debug — confirm OIDC token available
-        run: |
-          echo "ACTIONS_ID_TOKEN_REQUEST_URL=$ACTIONS_ID_TOKEN_REQUEST_URL"
-          echo "version=$(node -p \"require('./package.json').version\")"
-
       - name: Publish to npm (OIDC Trusted Publisher)
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          TAG=$([[ "$VERSION" == *"-"* ]] && echo "next" || echo "latest")
+          if [[ "$VERSION" == *"-"* ]]; then
+            TAG="next"
+          else
+            TAG="latest"
+          fi
           echo "Publishing $VERSION with tag=$TAG"
           npm publish --provenance --access public --tag "$TAG"
+        env:
+          NODE_AUTH_TOKEN: ''   # clear token set by setup-node so OIDC is used
