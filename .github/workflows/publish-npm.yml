@@ -22,12 +22,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
 
-      # npm Trusted Publishing requires npm >= 11.5.1
-      - name: Upgrade npm to latest for OIDC Trusted Publishing
-        run: sudo npm install -g npm@latest
-
+      - run: node -v && npm -v
       - run: npm ci
       - run: npm run build
 
